@@ -1,0 +1,73 @@
+TODO:
+
+change vuekey to just key
+  -FE refs
+  -BE refs
+  -Table Column name
+
+Item found list
+  -add title, make own "section"
+  -add action buttons top right of section
+    -expand/collapse all (toggle v-expansion-panel type?)
+    -Save options (add, replace, delete all)
+    -delete all
+
+
+
+//TODO:
+// git init
+// git ignore (.env, .htaccess, todo.txt(?), mono front/back ? ci configs)
+
+//TODO: DONE!
+//Move snackbar to app.vue
+//set method to emit
+
+//TODO:
+  //Add "missing image fallback"
+
+//TODO:
+  //ADD Prompt for scan/reset if item list exists to confirm list will be reset
+
+//TODO: handle cancel all in process
+//if cancelAll return
+//TODO: CANCEL ALL:
+  //CLEAR LISTFormatted, working lists, etc.
+    //retain completed items
+//TODO: SET ARRAY OF setTimeoutIds, 
+  //clearEachone,
+
+
+
+//POSSIBLE ALT EXAMPLE FROM STACK OVERFLOW FOR REQ THROTTLE
+// const listOfConversations = [];
+
+//         axios
+//           .post(searchUrl, searchBodyParameters, config)
+//           .then((response) => {...
+//     .then(() => {
+//         const interval = 70;
+//         let promise = Promise.resolve();
+//         listOfConversations.forEach((conversation) => {
+//         promise = promise.then(() => {
+//           axios.post(
+//             `https://api.intercom.io/conversations/${conversation}/parts`,
+//             closeBodyParameters,
+//             config,
+//           )
+//           .catch((error) => {
+//             console.log(
+//               `Error. Failed to close conversations. Server Returned - ${error.response.status}`,
+//             );
+//           })
+//           return new Promise((resolve) => {
+//             setTimeout(resolve, interval);
+//           })
+//         })
+//         });
+//       })
+//       .catch((error) => {
+//         console.log(
+//           `Error. Failed to get number of pages. Server Returned - ${error.response.status}`,
+//         );
+//       });
+//     }
