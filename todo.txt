@@ -12,9 +12,16 @@ Item found list
     -Save options (add, replace, delete all)
     -delete all
 
-
+//TODO:
+  //keep track of google api quotas?
 
 //TODO:
+  //Add Prompt for scan/reset if item list exists to confirm list will be reset
+
+//TODO: DONE!
+//add scroll to top fab btn
+
+//TODO: DONE!
 // git init
 // git ignore (.env, .htaccess, todo.txt(?), mono front/back ? ci configs)
 
@@ -22,13 +29,11 @@ Item found list
 //Move snackbar to app.vue
 //set method to emit
 
-//TODO:
+//TODO: DONE!
   //Add "missing image fallback"
 
-//TODO:
-  //ADD Prompt for scan/reset if item list exists to confirm list will be reset
-
-//TODO: handle cancel all in process
+//TODO: DONE! 
+// handle cancel all in process
 //if cancelAll return
 //TODO: CANCEL ALL:
   //CLEAR LISTFormatted, working lists, etc.

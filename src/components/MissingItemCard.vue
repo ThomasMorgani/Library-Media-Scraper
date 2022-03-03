@@ -21,7 +21,7 @@
         <template #activator="{ on }">
           <v-icon v-on="on" color="success" class="pa-2">mdi-autorenew</v-icon>
         </template>
-        <span>Rescan (coming soon)</span>
+        <span>Rescan</span>
       </v-tooltip>
       <v-tooltip color="primary" top>
         <template #activator="{ on }">

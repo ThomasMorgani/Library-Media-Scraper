@@ -22,8 +22,8 @@ export default {
       url,
       withCredentials,
     }).catch(error => {
-      console.log('error from apiPost, run handle error method')
-      console.log(error)
+      // console.log('error from apiPost, run handle error method')
+      // console.log(error)
       //setup handle error method
       return { message: error.message, status: error.response.status }
     })
@@ -45,8 +45,8 @@ export default {
       url,
       withCredentials: true,
     }).catch(error => {
-      console.log('error from apiPost, run handle error method')
-      console.log(error)
+      // console.log('error from apiPost, run handle error method')
+      // console.log(error)
       //setup handle error method
       return { error: error.message }
     })

@@ -3,8 +3,8 @@
     <v-app-bar app color="primary" dark>
       <v-app-bar-title>NEW MATERIALS</v-app-bar-title>
     </v-app-bar>
-    <v-main class="pb-8">
-      <NewMaterials @snackbar="onSnackBar" />
+    <v-main class="pb-8" v-scroll="onScroll">
+      <NewMaterials @snackbar="onSnackBar" ref="newMaterial" />
     </v-main>
     <!-- SNACKBAR -->
     <v-snackbar v-model="snackbar.show" app :color="snackbar.color" tile top>
@@ -13,8 +13,14 @@
         <v-btn icon v-bind="attrs" @click="snackbar.show = false">
           <v-icon color="secondary">mdi-close</v-icon>
         </v-btn>
+        <!-- SCROLL TO TOP BUTTON-->
       </template>
     </v-snackbar>
+    <v-fab-transition>
+      <v-btn app fixed fab bottom color="primary" right v-show="scrollTopBtn" style="z-index: 5" @click="$vuetify.goTo(scrollTopTarget, scrollTopOptions)">
+        <v-icon color="secondary">mdi-chevron-double-up</v-icon>
+      </v-btn>
+    </v-fab-transition>
   </v-app>
 </template>
 <script>
@@ -27,13 +33,29 @@
       NewMaterials,
     },
     data: () => ({
+      scrollTopOptions: {
+        duration: 300,
+        offset: 0,
+        easing: 'easeInOutCubic',
+      },
+      scrollTopBtn: false,
+      scrollTopTarget: 0,
       snackbar: {
         color: 'primary',
         show: false,
         text: '',
       },
     }),
+    computed: {
+      test() {
+        console.log(this.$refs.newMaterial)
+        return this.$refs
+      },
+    },
     methods: {
+      onScroll(e) {
+        this.scrollTopBtn = e?.srcElement?.scrollingElement?.scrollTop > 500
+      },
       onSnackBar({ color = 'primary', text = '' }) {
         this.snackbar = {
           color,

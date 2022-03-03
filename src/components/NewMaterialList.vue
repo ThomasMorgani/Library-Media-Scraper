@@ -2,9 +2,8 @@
   <v-sheet color="transparent" width="100%">
     <v-expansion-panels popout v-model="itemExpanded">
       <item-expansion-panel
-        v-for="(item, idx) in limitBy(orderBy(items, 'title'), listItemDisplayLimit)"
+        v-for="(item, idx) in limitBy(items, listItemDisplayLimit)"
         :key="item.vuekey"
-        :categories="categories"
         :id="'i' + item.vuekey"
         :isActivePanel="itemExpanded === idx"
         :item="item"
@@ -27,7 +26,6 @@
 <script>
   import Vue2Filters from 'vue2-filters'
   import ItemExpansionPanel from '@/components/NewMaterialExpansionPanel'
-
   export default {
     mixins: [Vue2Filters.mixin],
     components: {
@@ -39,13 +37,16 @@
         default: () => [],
       },
       listCategory: {
-        type: String,
+        type: Object,
+        required: true,
+      },
+      listItemDisplayLimit: {
+        type: Number,
         required: true,
       },
     },
     data: () => ({
       itemExpanded: null,
-      listItemDisplayLimit: 15,
     }),
     methods: {
       incrementListItemDisplayLimit() {
@@ -53,9 +54,12 @@
           return
         }
         if (this.listItemDisplayLimit + 10 > this.items.length) {
-          this.listItemDisplayLimit = this.items.length
+          //emit set limit
+          this.$emit('setListItemDisplayLimit', this.items.length)
+          // this.listItemDisplayLimit = this.items.length
         } else {
-          this.listItemDisplayLimit += 10
+          this.$emit('setListItemDisplayLimit', this.listItemDisplayLimit + 15)
+          // this.listItemDisplayLimit += 10
         }
       },
     },

@@ -34,6 +34,7 @@
                 </v-btn>
                 <!-- RESET FORM -->
                 <v-btn color="warning" tile width="200" @click="reset" class="mx-2"> <v-icon left small>mdi-undo</v-icon>RESET </v-btn>
+                
               </v-col>
             </v-form>
           </v-card-text>
@@ -70,8 +71,9 @@
                       <font class="primary--text font-weight-medium">SKIP ITEM</font>
                     </v-btn>
                   </h5>
-                  <p>
-                    <v-icon color="success" class="mr-2" small v-show="listItemsFound.length > 0">fas fa-check</v-icon>Data found for
+                  <v-btn v-if="itemsLoading" color="error" outlined small tile   @click="cancelScrape()" class="ma-2"> <v-icon left small>mdi-stop-circle-outline</v-icon>CANCEL ALL </v-btn>
+                  <p class="ma-2">
+                    <v-icon color="success" class="mr-2" small v-show="listItemsFound.length > 0">mdi-check</v-icon>Data found for
                     <font class="font-weight-bold">{{ listItemsFound.length }} / {{ listFormatted.length }}</font> isbn(s).
                   </p>
                   <v-card v-if="listItemsNotFound.length > 0" flat>
@@ -97,7 +99,7 @@
                           <v-col cols="12" v-if="listItemsNotFound.length > 0 && !itemsLoading" class="text-center">
                             <v-btn block color="warning"  outlined tile @click="rescanListItemsNotFoundAll" class="mt-5"> <v-icon small left>mdi-sync</v-icon>RESCAN ALL </v-btn>
                           </v-col>
-                          <v-col cols="12" md="8" lg="6" v-for="item in listItemsNotFound" :key="item">
+                          <v-col cols="12" md="6" lg="6" v-for="item in listItemsNotFound" :key="item">
                             <MissingItemCard
                               :key="item"
                               :error="listItemsErrorsByIsbn[item] || null"
@@ -156,11 +158,11 @@
         </v-col>
 
         <v-col sm="10" md="10" class="text-center px-6">
-          <v-btn block color="primary" outlined tile @click="modalItemEdit = true"> <v-icon color="primary" left>mdi-plus </v-icon> ADD ITEM</v-btn>
+          <v-btn block color="primary" outlined tile @click="modalItemEdit = true" > <v-icon color="primary" left>mdi-plus </v-icon> ADD ITEM</v-btn>
         </v-col>
         <template v-if="listItemsFound.length > 0">
           <v-col sm="10" md="10" class="text-center">
-            <new-material-list :listCategory="categories.find(c => c.value === listCategory)"  :items="listItemsFound" @deleteItem="onItemDelete" @editItem="onItemEdit"></new-material-list>
+            <new-material-list :listCategory="categories.find(c => c.value === listCategory)"  :items="listItemsDisplayed" :listItemDisplayLimit="listItemDisplayLimit" @deleteItem="onItemDelete" @editItem="onItemEdit" @setListItemDisplayLimit="listItemDisplayLimit = $event"></new-material-list>
           </v-col>
         </template>
       </template>
@@ -207,7 +209,7 @@
         </v-card>
       </v-dialog>
       <!-- EDIT ITEM MODAL -->
-      <v-dialog v-model="modalItemEdit" :key="`modalEdit${itemEditing && itemEditing.vuekey ? itemEditing.vuekey : ''}`" persistent width="500">
+      <v-dialog v-model="modalItemEdit" :key="`modalEdit${modalItemEdit + ''}${itemEditing && itemEditing.vuekey ? itemEditing.vuekey : ''}`" persistent width="500">
         <item-edit :item="itemEditing" @close="onCloseModalItemEdit" @save="onItemSave"></item-edit>
       </v-dialog>
     </v-row>
@@ -314,6 +316,7 @@
       listDuplicatesFound: 0,
       listFormatted: [],
       listFormatLoading: false,
+      listItemDisplayLimit: 15,
       listItemsErrors: [],
       listItemsFound: [],
       listItemsNotFound: [],
@@ -327,6 +330,7 @@
       modalItemEdit: false,
       rescanListItemsNotFound: false,
       saveBtnLoading: false,
+      scrapeCancelled: false,
       scrapeMethod: 'default',
       scrapeMethodOptions: [
         {
@@ -342,6 +346,7 @@
           value: 'livebrary',
         },
       ],
+      scrapeTimeoutIds: [],
       showMissing: false,
       uploadType: 'replace',
       valid: true,
@@ -353,6 +358,9 @@
         } else {
           return '/images/lg/library_front.jpg'
         }
+      },
+      listItemsDisplayed() {
+        return this.orderBy(this.listItemsFound, 'title')
       },
       listItemsErrorsByIsbn() {
         return this.listItemsErrors.reduce((acc, curr) => {
@@ -368,6 +376,35 @@
           delete this.axiosControllers[item]
         }
       },
+      cancelScrape() {
+        const defaultVals = {
+          listFormatLoading: false,
+          itemCurrentSearch: null,
+          itemsLoading: false,
+          // listFormatted: [],
+          // listItemDisplayLimit: 15,
+          // listItemsFound: [],
+          // listItemsNotFound: [],
+          listLinesProcessed: 0,
+          listValidLinesCount: 0,
+          saveBtnLoading: false,
+          scrapeTimeoutIds: []
+        }
+        this.scrapeCancelled = true
+        this.scrapeTimeoutIds.forEach(id => clearTimeout(id))
+        Object.keys(this.axiosControllers).forEach(k => this.cancelCurrentItemScrape(k))
+        //TODO: FINISH ? ADD ITEMS TO NOT FOUND LIST?
+        // const remainingItems = this.listFormatted.filter(x => !this.listItemsFound.includes(x));
+        // console.log(remainingItems)
+        // console.log([...this.listItemsErrors])
+        // console.log([...this.listItemsNotFound])
+        // remainingItems.forEach(i => {
+        //   this.listItemsErrors = [...this.listItemsErrors, {item: i, error: 'cancelled'}]
+        //   this.listItemsNotFound = [...this.listItemsNotFound, i]
+        // })
+        Object.keys(defaultVals).forEach(k => (this[k] = defaultVals[k]))
+        this.scrapeCancelled = false
+      },
       deleteItem(item) {
         this.listItemsNotFound = this.listItemsNotFound.filter(i => i.vuekey !== item.vuekey)
         this.listItemsFound = this.listItemsFound.filter(i => i.vuekey !== item.vuekey)
@@ -379,13 +416,13 @@
         const category = this.categories.find(c => c.value === this.listCategory)
         switch (this.scrapeMethod) {
           case 'google': {
-            return this.scrapeGoogle
+            return 'scrapeGoogle'
           }
           case 'livebrary': {
-            return this.scrapeCatalog
+            return 'scrapeCatalog'
           }
           case 'default': {
-            return category?.isBook ? this.scrapeGoogle : this.scrapeCatalog
+            return category?.isBook ? 'scrapeGoogle' : 'scrapeCatalog'
           }
         }
       },
@@ -499,10 +536,8 @@
         this.itemsLoading = true
         this.listItemsFound = []
         if (this.listSource === 'server') {
-          console.log('get list from backend... ')
           apiGet(process.env.VUE_APP_BASE_ENPOINT + 'getList/' + this.listCategory).then(
             resp => {
-              console.log(resp)
               if (resp?.data && Array.isArray(resp.data)) {
                 this.listFormatted = resp.data.map(i => i.vuekey)
                 this.listItemsFound = [...resp.data] || []
@@ -528,24 +563,29 @@
         this.listFormatLoading = false
         this.saveBtnLoading = false
         let workingItem = {}
-        const scrapeMethod = this.determineScrapeMethod()
+        const scrapeMethodName = this.determineScrapeMethod()
+        const scrapeMethod = this[scrapeMethodName]
 
-        //throttle requests to 5 per second
-        const reqPerSecond = 5
+        //throttle requests 
+        //warning! google books api  quota 100req/min (1000 max a day)
+        // DISABLED TO 1 REQ/SEC for demo
+        // const reqPerSec = 5
+        // const reqPerMin = 60
+        // const reqThrottle = scrapeMethodName === 'scrapeGoogle' ? reqPerMin : reqPerSec
         let timeout = 0
         for (let idx in this.listFormatted) {
-          //TODO: handle cancel all in process
-          //if cancelAll return
-          //TODO: CANCEL ALL:
-            //CLEAR LISTFormatted, working lists, etc.
-              //retain completed items
-          //TODO: SET ARRAY OF setTimeoutIds, 
-            //clearEachone,
-            
-          if (idx % reqPerSecond  === 0) {
-            timeout += 2000 //TESTING: TODO: set back to 1000
-          } 
-          setTimeout(async () => {
+          //if cancelled, eject
+          if (this.scrapeCancelled) {
+            break
+          }
+
+          //throttle
+          timeout += 1000
+          // if (idx > 0 && idx % reqThrottle  === 0 ) {
+          //   timeout += scrapeMethodName === 'scrapeGoogle' ? 60000 : 1000
+          // } 
+
+          const timeoutId = setTimeout(async () => {
             const line = this.listFormatted[idx].trim()
             this.itemCurrentSearch = line
             try {
@@ -559,7 +599,6 @@
                 // if (resp?.data.itemsNotFound.length > 0) throw new Error(resp.data.itemsNotFound)
               }
               if (resp?.data) {
-                console.log(resp)
                 if (resp?.data?.itemsNotFound?.length > 0) {
                   this.listItemsErrors = [...this.listItemsErrors, { error: 'Unable to find item', item: line }]
                   this.listItemsNotFound = [...this.listItemsNotFound, line]
@@ -580,6 +619,7 @@
               this.itemsLoading = false
             }
           }, timeout)
+          this.scrapeTimeoutIds.push(timeoutId)
         }
       },
       onCloseModalItemDelete() {
@@ -613,9 +653,14 @@
       onItemSave(item) {
         this.listItemsNotFound = this.listItemsNotFound.filter(i => i.vuekey !== item.vuekey)
         this.listItemsFound = [...this.listItemsFound.filter(i => i.vuekey !== item.vuekey), item]
+        const savedItemIdx = this.listItemsDisplayed.findIndex(i => i.vuekey === item.vuekey)
+        if (savedItemIdx + 1 > this.listItemDisplayLimit) this.listItemDisplayLimit = savedItemIdx + 5 //ensure save item visible in list (with 5 item buffer) to scroll to
         this.$emit('snackbar', {color: 'success' , text: 'Item updated'})
         this.modalItemEdit = false
         this.itemEditing = {}
+        //TODO: set items showing to items found length, then scroll to
+        //TODO: clean up console logs, api.js, 48, 49 and others... new material 502, 505 554
+
         this.$nextTick(() => this.$vuetify.goTo('#i' + item.vuekey))
       },
       onListSourceChange(listSource) {
@@ -650,7 +695,7 @@
           itemCurrentSearch: null,
           itemEditing: {},
           itemsLoading: false,
-          listCategory: null,
+          listCategory: '',
           listFormatted: [],
           listItemDisplayLimit: 15,
           listItemsFound: [],
@@ -661,7 +706,7 @@
           saveBtnLoading: false,
           valid: true,
         }
-        Object.keys(this.axiosControllers).forEach(k => this.cancelCurrentItemScrape(k))
+        this.cancelScrape()
         Object.keys(defaultVals).forEach(k => (this[k] = defaultVals[k]))
         this.$refs.listFile.value = ''
       },
