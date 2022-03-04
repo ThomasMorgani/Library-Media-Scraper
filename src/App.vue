@@ -1,10 +1,13 @@
 <template>
   <v-app>
-    <v-app-bar app color="primary" dark>
-      <v-app-bar-title>NEW MATERIALS</v-app-bar-title>
+    <v-app-bar app color="primary" dark height="74">
+      <v-app-bar-title v-show="materialListY !== 0">{{ this.materialListY > 0 ? 'NEW MATERIALS' : '' }}</v-app-bar-title>
+      <!-- <v-app-bar-title>{{ 'NEW MATERIALS' }}</v-app-bar-title> -->
+      <!-- <v-app-bar-title>{{$vuetify.breakpoint. NEW MATERIALS}}</v-app-bar-title> -->
     </v-app-bar>
+
     <v-main class="pb-8" v-scroll="onScroll">
-      <NewMaterials @snackbar="onSnackBar" ref="newMaterial" />
+      <NewMaterials @materialListIntersectObserved="materialListY = $event" @snackbar="onSnackBar" ref="newMaterial" />
     </v-main>
     <!-- SNACKBAR -->
     <v-snackbar v-model="snackbar.show" app :color="snackbar.color" tile top>
@@ -33,6 +36,7 @@
       NewMaterials,
     },
     data: () => ({
+      materialListY: null,
       scrollTopOptions: {
         duration: 300,
         offset: 0,
@@ -54,8 +58,12 @@
     },
     methods: {
       onScroll(e) {
+        const materialListTitle = document.querySelector('#materialListStickySheet')
+        // console.dir(materialListTitle)
+        // console.dir(materialListTitle)
         this.scrollTopBtn = e?.srcElement?.scrollingElement?.scrollTop > 500
       },
+
       onSnackBar({ color = 'primary', text = '' }) {
         this.snackbar = {
           color,
@@ -76,3 +84,8 @@
     },
   }
 </script>
+<style>
+  body {
+    /* overflow: auto; */
+  }
+</style>

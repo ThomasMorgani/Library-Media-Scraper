@@ -1,5 +1,5 @@
 <template>
-  <v-expansion-panel>
+  <v-expansion-panel style="width: 100%">
     <v-expansion-panel-header>
       <v-row row wrap align-center>
         <v-col cols="2" class="d-flex align-center justify-center">

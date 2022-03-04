@@ -34,7 +34,6 @@
                 </v-btn>
                 <!-- RESET FORM -->
                 <v-btn color="warning" tile width="200" @click="reset" class="mx-2"> <v-icon left small>mdi-undo</v-icon>RESET </v-btn>
-                
               </v-col>
             </v-form>
           </v-card-text>
@@ -57,8 +56,8 @@
         </template>
       </v-col>
       <template v-if="itemsLoading || listItemsFound.length > 0 || listItemsNotFound.length > 0">
-        <v-col sm="10" md="10" lg="8" class="text-xs-center">
-          <v-card>
+        <v-col cols="12" sm="10" md="10" lg="8" class="text-xs-center">
+          <v-card id="progressCard">
             <v-card-text>
               <v-row row wrap>
                 <v-col cols="12" class="text-center">
@@ -71,7 +70,9 @@
                       <font class="primary--text font-weight-medium">SKIP ITEM</font>
                     </v-btn>
                   </h5>
-                  <v-btn v-if="itemsLoading" color="error" outlined small tile   @click="cancelScrape()" class="ma-2"> <v-icon left small>mdi-stop-circle-outline</v-icon>CANCEL ALL </v-btn>
+                  <v-btn v-if="itemsLoading" color="error" outlined small tile @click="cancelScrape()" class="ma-2">
+                    <v-icon left small>mdi-stop-circle-outline</v-icon>CANCEL ALL
+                  </v-btn>
                   <p class="ma-2">
                     <v-icon color="success" class="mr-2" small v-show="listItemsFound.length > 0">mdi-check</v-icon>Data found for
                     <font class="font-weight-bold">{{ listItemsFound.length }} / {{ listFormatted.length }}</font> isbn(s).
@@ -97,7 +98,7 @@
                         <p>Click rescan to use backup method or manually enter.</p>
                         <v-row>
                           <v-col cols="12" v-if="listItemsNotFound.length > 0 && !itemsLoading" class="text-center">
-                            <v-btn block color="warning"  outlined tile @click="rescanListItemsNotFoundAll" class="mt-5"> <v-icon small left>mdi-sync</v-icon>RESCAN ALL </v-btn>
+                            <v-btn block color="warning" outlined tile @click="rescanListItemsNotFoundAll" class="mt-5"> <v-icon small left>mdi-sync</v-icon>RESCAN ALL </v-btn>
                           </v-col>
                           <v-col cols="12" md="6" lg="6" v-for="item in listItemsNotFound" :key="item">
                             <MissingItemCard
@@ -157,12 +158,20 @@
           </v-card>
         </v-col>
 
-        <v-col sm="10" md="10" class="text-center px-6">
-          <v-btn block color="primary" outlined tile @click="modalItemEdit = true" > <v-icon color="primary" left>mdi-plus </v-icon> ADD ITEM</v-btn>
-        </v-col>
-        <template v-if="listItemsFound.length > 0">
-          <v-col sm="10" md="10" class="text-center">
-            <new-material-list :listCategory="categories.find(c => c.value === listCategory)"  :items="listItemsDisplayed" :listItemDisplayLimit="listItemDisplayLimit" @deleteItem="onItemDelete" @editItem="onItemEdit" @setListItemDisplayLimit="listItemDisplayLimit = $event"></new-material-list>
+        <!-- <template v-if="listItemsFound.length > 0"> -->
+        <template v-if="itemsLoading || listLinesProcessed > 0">
+          <v-col cols="12" sm="10" md="10" class="text-center">
+            <!-- <div id="materialListStickySheet" style="position: absolute; display: block"></div> -->
+            <div v-intersect="onitemListIntersect"></div>
+            <new-material-list
+              :listCategory="categories.find(c => c.value === listCategory)"
+              :items="listItemsDisplayed"
+              :listItemDisplayLimit="listItemDisplayLimit"
+              @deleteItem="onItemDelete"
+              @editItem="onItemEdit"
+              @materialListPosY="$emit('materialListPosY', $event)"
+              @setListItemDisplayLimit="listItemDisplayLimit = $event"
+            ></new-material-list>
           </v-col>
         </template>
       </template>
@@ -191,12 +200,14 @@
             <v-card tile class="my-8">
               <v-card-text class="d-flex align-start justify-start">
                 <v-sheet color="transparent" class="flex-shrink-1">
-                <v-img :src="itemEditing.imageLinks && itemEditing.imageLinks.thumbnail ? itemEditing.imageLinks.thumbnail : ''"></v-img>
+                  <v-img :src="itemEditing.imageLinks && itemEditing.imageLinks.thumbnail ? itemEditing.imageLinks.thumbnail : ''"></v-img>
                 </v-sheet>
                 <v-sheet color="transparent" class="d-flex flex-column flex-grow-1 align-start justify-start text-left px-4">
                   <span class="text-h6 primary--text">{{ itemEditing.title }}</span>
-                  <span><strong>{{ itemEditing.vuekey }}</strong></span>
-                  <span>{{ !itemEditing.description ? '' : `${itemEditing.description.substring(0, 200)}${itemEditing.description.length > 200 ? '...' : ''}`   }}</span>
+                  <span
+                    ><strong>{{ itemEditing.vuekey }}</strong></span
+                  >
+                  <span>{{ !itemEditing.description ? '' : `${itemEditing.description.substring(0, 200)}${itemEditing.description.length > 200 ? '...' : ''}` }}</span>
                 </v-sheet>
               </v-card-text>
             </v-card>
@@ -213,8 +224,6 @@
         <item-edit :item="itemEditing" @close="onCloseModalItemEdit" @save="onItemSave"></item-edit>
       </v-dialog>
     </v-row>
-
-  </v-container>
   </v-container>
 </template>
 
@@ -388,7 +397,7 @@
           listLinesProcessed: 0,
           listValidLinesCount: 0,
           saveBtnLoading: false,
-          scrapeTimeoutIds: []
+          scrapeTimeoutIds: [],
         }
         this.scrapeCancelled = true
         this.scrapeTimeoutIds.forEach(id => clearTimeout(id))
@@ -410,8 +419,8 @@
         this.listItemsFound = this.listItemsFound.filter(i => i.vuekey !== item.vuekey)
         this.itemEditing = {}
         this.modalItemDelete = false
-        this.$emit('snackbar', {color: 'success' , text: 'Item removed'})
-      },      
+        this.$emit('snackbar', { color: 'success', text: 'Item removed' })
+      },
       determineScrapeMethod() {
         const category = this.categories.find(c => c.value === this.listCategory)
         switch (this.scrapeMethod) {
@@ -535,17 +544,19 @@
       async getItemDetails() {
         this.itemsLoading = true
         this.listItemsFound = []
+        this.$nextTick(() => this.$vuetify.goTo('#progressCard'))
         if (this.listSource === 'server') {
-          apiGet(process.env.VUE_APP_BASE_ENPOINT + 'getList/' + this.listCategory).then(
-            resp => {
+          apiGet(process.env.VUE_APP_BASE_ENPOINT + 'getList/' + this.listCategory)
+            .then(resp => {
               if (resp?.data && Array.isArray(resp.data)) {
                 this.listFormatted = resp.data.map(i => i.vuekey)
                 this.listItemsFound = [...resp.data] || []
                 this.listLinesProcessed = resp.data.length || 0
                 this.itemsLoading = false
               }
-            }).catch(err => console.log(err))
-          return;
+            })
+            .catch(err => console.log(err))
+          return
         }
         //RESET EXISTING VALUES
         if (!this.rescanListItemsNotFound) {
@@ -566,7 +577,7 @@
         const scrapeMethodName = this.determineScrapeMethod()
         const scrapeMethod = this[scrapeMethodName]
 
-        //throttle requests 
+        //throttle requests
         //warning! google books api  quota 100req/min (1000 max a day)
         // DISABLED TO 1 REQ/SEC for demo
         // const reqPerSec = 5
@@ -583,7 +594,7 @@
           timeout += 1000
           // if (idx > 0 && idx % reqThrottle  === 0 ) {
           //   timeout += scrapeMethodName === 'scrapeGoogle' ? 60000 : 1000
-          // } 
+          // }
 
           const timeoutId = setTimeout(async () => {
             const line = this.listFormatted[idx].trim()
@@ -642,6 +653,10 @@
         }
         return false
       },
+      onitemListIntersect(entries, observer) {
+        const offsetY = entries?.[0]?.boundingClientRect?.top ?? 1
+        this.$emit('materialListIntersectObserved', offsetY)
+      },
       onItemDelete(item) {
         this.itemEditing = { ...item }
         this.modalItemDelete = true
@@ -655,7 +670,7 @@
         this.listItemsFound = [...this.listItemsFound.filter(i => i.vuekey !== item.vuekey), item]
         const savedItemIdx = this.listItemsDisplayed.findIndex(i => i.vuekey === item.vuekey)
         if (savedItemIdx + 1 > this.listItemDisplayLimit) this.listItemDisplayLimit = savedItemIdx + 5 //ensure save item visible in list (with 5 item buffer) to scroll to
-        this.$emit('snackbar', {color: 'success' , text: 'Item updated'})
+        this.$emit('snackbar', { color: 'success', text: 'Item updated' })
         this.modalItemEdit = false
         this.itemEditing = {}
         //TODO: set items showing to items found length, then scroll to
@@ -727,26 +742,27 @@
       },
       scrapeGoogle(item) {
         return new Promise(async (resolve, reject) => {
-        const apiKey = process.env.VUE_APP_G_BOOKS_API_KEY
-        const apiUrl = `https://www.googleapis.com/books/v1/volumes?q=isbn:${item}&key=${apiKey}`
-        this.axiosControllers[item] = new AbortController()
-        let itemData = {}
-         apiGet(apiUrl, this.axiosControllers[item], false).then(
-            resp => {
+          const apiKey = process.env.VUE_APP_G_BOOKS_API_KEY
+          const apiUrl = `https://www.googleapis.com/books/v1/volumes?q=isbn:${item}&key=${apiKey}`
+          this.axiosControllers[item] = new AbortController()
+          let itemData = {}
+          apiGet(apiUrl, this.axiosControllers[item], false)
+            .then(resp => {
               if (resp) {
                 this.source = null
                 //MAP CONSTANT
                 const itemDetails = resp.data.totalItems > 0 ? this.formatBookData(resp.data.items[0].volumeInfo) : false
                 //getItemDetails expects this format {data:{itemsData: [{objOfItemData}], itemsNotFound: ['arrayOfISBNStrings']}}
                 const data = {
-                  data:{
+                  data: {
                     itemsData: itemDetails ? [itemDetails] : [],
                     itemsNotFound: itemDetails ? [] : [item],
-                  }
+                  },
                 }
                 resolve(data)
               }
-            }).catch(err => console.log(err))
+            })
+            .catch(err => console.log(err))
         })
       },
       setFile() {
@@ -772,14 +788,15 @@
           headers: {
             'Content-Type': 'multipart/form-data',
           },
-        }).then(response => {
+        })
+          .then(response => {
             this.saveBtnLoading = false
             if (response.data.status === 'login') {
               console.log('login returned as response')
             }
             const status = response?.data?.status || 'primary'
             const text = response?.data?.message || '-'
-            this.$emit('snackbar', {color: status , text: text})
+            this.$emit('snackbar', { color: status, text: text })
           })
           .catch(e => {
             console.log(e)
@@ -791,5 +808,14 @@
 <style scoped>
   p {
     margin: 0 !important;
+  }
+
+  .searchSheet {
+    position: -webkit-sticky; /* for safari */
+    position: sticky !important;
+    display: block;
+    height: min-content;
+    top: 30px;
+    z-index: 22;
   }
 </style>
